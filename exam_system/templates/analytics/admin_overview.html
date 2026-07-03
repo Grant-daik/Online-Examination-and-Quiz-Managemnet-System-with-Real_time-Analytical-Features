@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block title %}System Analytics{% endblock %}
+
+{% block extra_css %}
+<style>.chart-container { position: relative; height: 260px; }</style>
+{% endblock %}
+
+{% block content %}
+<h4 class="fw-bold mb-4">System analytics</h4>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-2">
+    <div class="card p-3 text-center">
+      <div class="fs-4 fw-bold">{{ stats.total_users }}</div>
+      <div class="text-muted small">Users</div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card p-3 text-center">
+      <div class="fs-4 fw-bold">{{ stats.total_students }}</div>
+      <div class="text-muted small">Students</div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card p-3 text-center">
+      <div class="fs-4 fw-bold">{{ stats.total_lecturers }}</div>
+      <div class="text-muted small">Lecturers</div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card p-3 text-center">
+      <div class="fs-4 fw-bold">{{ stats.total_exams }}</div>
+      <div class="text-muted small">Exams</div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card p-3 text-center">
+      <div class="fs-4 fw-bold">{{ stats.total_submissions }}</div>
+      <div class="text-muted small">Submissions</div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card p-3 text-center">
+      <div class="fs-4 fw-bold">{{ stats.avg_score }}%</div>
+      <div class="text-muted small">Avg score</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Grade distribution</h6>
+        <div class="chart-container">
+          <canvas id="gradeChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Monthly submissions</h6>
+        <div class="chart-container">
+          <canvas id="monthlyChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- top lecturers -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Top lecturers by avg student score</h6>
+        {% for lecturer in stats.top_lecturers %}
+        <div class="d-flex justify-content-between border-bottom py-2">
+          <span class="small">{{ lecturer.get_full_name }}</span>
+          <span class="fw-500 small">{{ lecturer.avg_score|floatformat:1 }}%</span>
+        </div>
+        {% empty %}
+        <p class="text-muted small mb-0">No data yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- department stats -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Submissions by department</h6>
+        {% for dept in stats.dept_stats %}
+        <div class="d-flex justify-content-between border-bottom py-2">
+          <span class="small">{{ dept.name }}</span>
+          <div class="d-flex gap-2">
+            <span class="badge bg-dark">{{ dept.submission_count }}</span>
+            <span class="small text-muted">
+              {% if dept.avg_score %}{{ dept.avg_score|floatformat:1 }}%{% endif %}
+            </span>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-muted small mb-0">No data yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- proctoring summary -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">
+      Proctoring events
+      <span class="badge bg-secondary ms-1">{{ stats.total_alerts }} total</span>
+    </h6>
+    {% for item in stats.alert_breakdown %}
+    <div class="d-flex justify-content-between border-bottom py-2">
+      <span class="small">{{ item.event_type|title }}</span>
+      <span class="badge bg-secondary">{{ item.count }}</span>
+    </div>
+    {% empty %}
+    <p class="text-muted small mb-0">No proctoring events recorded.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const chartData = {{ chart_data|safe }};
+const colors = ['#198754','#0d6efd','#fd7e14','#ffc107','#dc3545','#6c757d'];
+
+if (chartData.grades.labels.length > 0) {
+  new Chart(document.getElementById('gradeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: chartData.grades.labels,
+      datasets: [{ data: chartData.grades.data, backgroundColor: colors, borderWidth: 2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right' } },
+    }
+  });
+}
+
+if (chartData.monthly.labels.length > 0) {
+  new Chart(document.getElementById('monthlyChart'), {
+    type: 'bar',
+    data: {
+      labels: chartData.monthly.labels,
+      datasets: [
+        {
+          label: 'Submissions',
+          data: chartData.monthly.data,
+          backgroundColor: '#1a1a2e',
+          borderRadius: 4,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Avg score (%)',
+          data: chartData.monthly.avg_scores,
+          type: 'line',
+          borderColor: '#6a6aaa',
+          backgroundColor: 'transparent',
+          tension: 0.4,
+          yAxisID: 'y1',
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, position: 'left' },
+        y1: { beginAtZero: true, max: 100, position: 'right', grid: { drawOnChartArea: false } },
+      },
+    }
+  });
+}
+</script>
+{% endblock %}

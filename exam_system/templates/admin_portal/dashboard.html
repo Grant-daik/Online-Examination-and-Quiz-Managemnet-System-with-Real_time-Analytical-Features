@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">Admin dashboard</h4>
+    <p class="text-muted small mb-0">Full system overview</p>
+  </div>
+  <a href="/admin/" class="btn btn-sm btn-outline-dark">Django admin</a>
+</div>
+
+<!-- stats -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ total_users }}</div>
+      <div class="text-muted small">Total users</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ total_students }}</div>
+      <div class="text-muted small">Students</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ total_exams }}</div>
+      <div class="text-muted small">Total exams</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold text-success">{{ active_exams }}</div>
+      <div class="text-muted small">Active now</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ total_submissions }}</div>
+      <div class="text-muted small">Submissions</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ total_departments }}</div>
+      <div class="text-muted small">Departments</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ total_courses }}</div>
+      <div class="text-muted small">Courses</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ total_lecturers }}</div>
+      <div class="text-muted small">Lecturers</div>
+    </div>
+  </div>
+</div>
+
+<!-- quick links -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <a href="{% url 'admin_portal:user_list' %}" class="card text-decoration-none text-dark p-3 d-block text-center">
+      <div class="fw-bold">Manage users</div>
+      <div class="text-muted small">View, activate, delete</div>
+    </a>
+  </div>
+  <div class="col-md-3">
+    <a href="{% url 'admin_portal:department_list' %}" class="card text-decoration-none text-dark p-3 d-block text-center">
+      <div class="fw-bold">Departments</div>
+      <div class="text-muted small">Create and manage</div>
+    </a>
+  </div>
+  <div class="col-md-3">
+    <a href="{% url 'admin_portal:course_list' %}" class="card text-decoration-none text-dark p-3 d-block text-center">
+      <div class="fw-bold">Courses</div>
+      <div class="text-muted small">Create and manage</div>
+    </a>
+  </div>
+  <div class="col-md-3">
+  <a href="{% url 'analytics:admin_overview' %}" class="card text-decoration-none text-dark p-3 d-block text-center">
+    <div class="fw-bold">Analytics</div>
+    <div class="text-muted small">System-wide reports</div>
+  </a>
+  </div>
+</div>
+
+<!-- recent users -->
+{% if recent_users %}
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between mb-3">
+      <h6 class="fw-bold mb-0">Recent users</h6>
+      <a href="{% url 'admin_portal:user_list' %}" class="small text-muted">View all</a>
+    </div>
+    {% for user in recent_users %}
+    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+      <div>
+        <div class="fw-500 small">{{ user.get_full_name }}</div>
+        <div class="text-muted small">{{ user.email }}</div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-secondary">{{ user.role }}</span>
+        <a href="{% url 'admin_portal:user_detail' user.id %}" class="btn btn-sm btn-outline-dark">View</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- recent exams -->
+{% if recent_exams %}
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between mb-3">
+      <h6 class="fw-bold mb-0">Recent exams</h6>
+      <a href="{% url 'admin_portal:exam_oversight' %}" class="small text-muted">View all</a>
+    </div>
+    {% for exam in recent_exams %}
+    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+      <div>
+        <div class="fw-500 small">{{ exam.title }}</div>
+        <div class="text-muted small">{{ exam.course.code }} — {{ exam.created_by.get_full_name }}</div>
+      </div>
+      <span class="badge {% if exam.status == 'published' %}bg-success{% elif exam.status == 'draft' %}bg-secondary{% else %}bg-danger{% endif %}">
+        {{ exam.status }}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

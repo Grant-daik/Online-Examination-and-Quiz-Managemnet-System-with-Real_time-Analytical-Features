@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Invigilator Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">Welcome, {{ user.first_name }}</h4>
+    <p class="text-muted small mb-0">Monitor and manage your assigned exams</p>
+  </div>
+  <a href="{% url 'invigilator:assigned_exams' %}" class="btn btn-dark btn-sm">View all exams</a>
+</div>
+
+<!-- active exams -->
+{% if active_exams %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">
+      <span class="badge bg-success me-2">Live</span>Active exams
+    </h6>
+    {% for exam in active_exams %}
+    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+      <div>
+        <div class="fw-500">{{ exam.title }}</div>
+        <div class="text-muted small">{{ exam.course.code }} — ends {{ exam.end_time|date:"H:i" }}</div>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'invigilator:monitor_exam' exam.id %}" class="btn btn-sm btn-success">
+          Monitor live
+        </a>
+        <a href="{% url 'invigilator:exam_sessions' exam.id %}" class="btn btn-sm btn-outline-dark">
+          Sessions
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="card mb-4">
+  <div class="card-body text-center text-muted py-4">
+    No active exams right now.
+  </div>
+</div>
+{% endif %}
+
+<!-- upcoming exams -->
+{% if upcoming_exams %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Upcoming exams</h6>
+    {% for exam in upcoming_exams %}
+    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+      <div>
+        <div class="fw-500">{{ exam.title }}</div>
+        <div class="text-muted small">{{ exam.course.code }}</div>
+      </div>
+      <span class="badge bg-secondary">{{ exam.start_time|date:"d M Y, H:i" }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- recent alerts -->
+{% if recent_alerts %}
+<div class="card">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Recent alerts</h6>
+    {% for alert in recent_alerts %}
+    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+      <div>
+        <div class="fw-500 small">{{ alert.session.student.get_full_name }}</div>
+        <div class="text-muted small">
+          {{ alert.get_event_type_display }} — {{ alert.session.exam.title }}
+        </div>
+      </div>
+      <span class="text-muted small">{{ alert.timestamp|date:"H:i" }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}My Performance{% endblock %}
+
+{% block extra_css %}
+<style>.chart-container { position: relative; height: 240px; }</style>
+{% endblock %}
+
+{% block content %}
+<h4 class="fw-bold mb-4">My performance</h4>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ stats.total_exams }}</div>
+      <div class="text-muted small">Exams taken</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ stats.avg_score }}%</div>
+      <div class="text-muted small">Average score</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold text-success">{{ stats.highest }}%</div>
+      <div class="text-muted small">Highest score</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold text-danger">{{ stats.lowest }}%</div>
+      <div class="text-muted small">Lowest score</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Performance trend</h6>
+        <div class="chart-container">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Grade breakdown</h6>
+        <div class="chart-container">
+          <canvas id="gradeChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if stats.course_stats %}
+<div class="card">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Performance by course</h6>
+    <table class="table table-sm mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>Course</th>
+          <th>Exams taken</th>
+          <th>Avg score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for course in stats.course_stats %}
+        <tr>
+          <td class="small">
+            {{ course.session__exam__course__code }} —
+            {{ course.session__exam__course__title }}
+          </td>
+          <td>{{ course.count }}</td>
+          <td>
+            <span class="{% if course.avg_score >= 70 %}text-success{% elif course.avg_score >= 50 %}text-warning{% else %}text-danger{% endif %} fw-500">
+              {{ course.avg_score|floatformat:1 }}%
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const chartData = {{ chart_data|safe }};
+
+if (chartData.trend.labels.length > 0) {
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: chartData.trend.labels,
+      datasets: [{
+        label: 'Score (%)',
+        data: chartData.trend.scores,
+        borderColor: '#1a1a2e',
+        backgroundColor: 'rgba(26,26,46,0.1)',
+        tension: 0.4,
+        fill: true,
+        pointRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, max: 100 } },
+      plugins: { legend: { display: false } },
+    }
+  });
+}
+
+if (chartData.grades.labels.length > 0) {
+  new Chart(document.getElementById('gradeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: chartData.grades.labels,
+      datasets: [{
+        data: chartData.grades.data,
+        backgroundColor: ['#198754','#0d6efd','#fd7e14','#ffc107','#dc3545','#6c757d'],
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+    }
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}{{ viewed_user.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">{{ viewed_user.get_full_name }}</h4>
+    <p class="text-muted small mb-0">{{ viewed_user.email }} — {{ viewed_user.role|capfirst }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <form method="post" action="{% url 'admin_portal:toggle_user_active' viewed_user.id %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm {% if viewed_user.is_active %}btn-warning{% else %}btn-success{% endif %}">
+        {% if viewed_user.is_active %}Deactivate{% else %}Activate{% endif %}
+      </button>
+    </form>
+    <form method="post" action="{% url 'admin_portal:delete_user' viewed_user.id %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-danger"
+        onclick="return confirm('Delete {{ viewed_user.get_full_name }}? This cannot be undone.')">
+        Delete user
+      </button>
+    </form>
+    <a href="{% url 'admin_portal:user_list' %}" class="btn btn-sm btn-outline-dark">Back</a>
+  </div>
+</div>
+
+<!-- profile details -->
+{% if profile %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Profile details</h6>
+    {% if viewed_user.role == 'student' %}
+      <p class="mb-1 small"><strong>Matric number:</strong> {{ profile.matric_number }}</p>
+      <p class="mb-1 small"><strong>Department:</strong> {{ profile.department }}</p>
+      <p class="mb-1 small"><strong>Level:</strong> {{ profile.level }}</p>
+      <p class="mb-0 small"><strong>Enrolled courses:</strong>
+        {% for course in profile.enrolled_courses.all %}{{ course.code }}{% if not forloop.last %}, {% endif %}{% endfor %}
+      </p>
+    {% elif viewed_user.role == 'lecturer' %}
+      <p class="mb-1 small"><strong>Staff ID:</strong> {{ profile.staff_id }}</p>
+      <p class="mb-1 small"><strong>Department:</strong> {{ profile.department }}</p>
+      <p class="mb-0 small"><strong>Courses:</strong>
+        {% for course in profile.courses.all %}{{ course.code }}{% if not forloop.last %}, {% endif %}{% endfor %}
+      </p>
+    {% elif viewed_user.role == 'invigilator' %}
+      <p class="mb-1 small"><strong>Staff ID:</strong> {{ profile.staff_id }}</p>
+      <p class="mb-0 small"><strong>Department:</strong> {{ profile.department }}</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- student submissions -->
+{% if submissions %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Recent exam submissions</h6>
+    {% for sub in submissions %}
+    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+      <div class="small">{{ sub.session.exam.title }}</div>
+      <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-secondary">{{ sub.grade }}</span>
+        <span class="small text-muted">{{ sub.percentage }}%</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- lecturer exams -->
+{% if exams %}
+<div class="card">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Created exams</h6>
+    {% for exam in exams %}
+    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+      <div class="small">{{ exam.title }} — {{ exam.course.code }}</div>
+      <span class="badge {% if exam.status == 'published' %}bg-success{% elif exam.status == 'draft' %}bg-secondary{% else %}bg-danger{% endif %}">
+        {{ exam.status }}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

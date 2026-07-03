@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Analytics{% endblock %}
+
+{% block content %}
+<h4 class="fw-bold mb-4">System analytics</h4>
+
+<!-- overview -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ total_submissions }}</div>
+      <div class="text-muted small">Total submissions</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ avg_score }}%</div>
+      <div class="text-muted small">Average score</div>
+    </div>
+  </div>
+</div>
+
+<!-- grade distribution -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Grade distribution</h6>
+    {% for item in grade_distribution %}
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="fw-500">Grade {{ item.grade }}</span>
+      <div class="d-flex align-items-center gap-2" style="flex:1; margin-left:16px;">
+        <div class="progress flex-grow-1" style="height:10px;">
+          <div class="progress-bar bg-dark" style="width:{{ item.count }}0%"></div>
+        </div>
+        <span class="small text-muted">{{ item.count }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- top performing exams -->
+{% if top_exams %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Top performing exams</h6>
+    <table class="table table-sm mb-0">
+      <thead>
+        <tr>
+          <th>Exam</th>
+          <th>Course</th>
+          <th>Avg score</th>
+          <th>Submissions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for exam in top_exams %}
+        <tr>
+          <td class="small">{{ exam.title }}</td>
+          <td class="small">{{ exam.course.code }}</td>
+          <td class="small">{{ exam.avg_score|floatformat:1 }}%</td>
+          <td class="small">{{ exam.submission_count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- proctoring summary -->
+{% if alert_summary %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Proctoring events summary</h6>
+    {% for item in alert_summary %}
+    <div class="d-flex justify-content-between border-bottom py-2">
+      <span class="small">{{ item.event_type|title|cut:"_" }}</span>
+      <span class="badge bg-secondary">{{ item.count }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- department stats -->
+{% if dept_stats %}
+<div class="card">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Submissions by department</h6>
+    {% for dept in dept_stats %}
+    <div class="d-flex justify-content-between border-bottom py-2">
+      <span class="small">{{ dept.name }}</span>
+      <span class="badge bg-dark">{{ dept.submission_count }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

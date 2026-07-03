@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}About - Caritas University Examination and Quiz System{% endblock %}
+
+{% block extra_css %}
+<style>
+  .about-hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: white;
+    padding: 70px 0;
+  }
+  .role-section { border-left: 4px solid #1a1a2e; padding-left: 20px; margin-bottom: 32px; }
+  .role-section.lecturer { border-color: #0d6efd; }
+  .role-section.student { border-color: #198754; }
+  .role-section.invigilator { border-color: #fd7e14; }
+  .role-section.admin { border-color: #1a1a2e; }
+  .step-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+  .step-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #1a1a2e; flex-shrink: 0; margin-top: 6px;
+  }
+  .url-pill {
+    background: #f0f0f5;
+    border-radius: 8px;
+    padding: 4px 12px;
+    font-family: monospace;
+    font-size: 13px;
+    color: #1a1a2e;
+    display: inline-block;
+    margin: 3px 0;
+  }
+  .dev-card {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: white;
+    border-radius: 20px;
+    padding: 40px;
+  }
+  .tech-badge {
+    background: rgba(255,255,255,0.12);
+    color: white;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    display: inline-block;
+    margin: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block main_class %}{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<section class="about-hero">
+  <div class="container text-center">
+    <h1 class="fw-bold mb-3">About this system</h1>
+    <p style="opacity:0.8; max-width:580px; margin:0 auto; font-size:1.05rem;">
+      A comprehensive online examination and quiz platform built for Caritas University,
+      designed to make academic assessments secure, efficient, and more transparent.
+    </p>
+  </div>
+</section>
+
+<div class="container py-5">
+
+  <!-- About the System -->
+  <div class="row mb-5">
+    <div class="col-md-8 mx-auto text-center">
+      <h2 class="fw-bold mb-3">What is this system?</h2>
+      <p class="text-muted">
+        The Caritas University Online Examination & Quiz Management System is a web-based platform
+        that allows lecturers to create and administer exams, students to take them securely from
+        their devices, invigilators to monitor sessions in real time, and administrators to manage
+        the entire academic structure. All this, done from one unified system.
+      </p>
+    </div>
+  </div>
+
+  <!-- How to use by role -->
+  <h2 class="fw-bold mb-4 text-center">How to use the system</h2>
+
+  <div class="row g-4 mb-5">
+
+    <!-- Admin -->
+    <div class="col-md-6">
+      <div class="card p-4 h-100 shadow-sm">
+        <div style="font-size:28px;">🛡️</div>
+        <h5 class="fw-bold mt-2 mb-3">Admin</h5>
+        <div class="role-section admin">
+          <div class="step-item">
+            <div class="step-dot"></div>
+            <div class="small">Log in and you'll be directed to the admin dashboard</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot"></div>
+            <div class="small">Start by creating <strong>departments</strong> under Departments management.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot"></div>
+            <div class="small">Then create <strong>courses</strong> and assign them to departments.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot"></div>
+            <div class="small">Manage all <strong>users</strong> :- activate, deactivate, or delete accounts.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot"></div>
+            <div class="small">Assign <strong>invigilators</strong> to exams from the exam oversight page.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot"></div>
+            <div class="small">View system-wide <strong>analytics</strong> including submission trends and department stats.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lecturer -->
+    <div class="col-md-6">
+      <div class="card p-4 h-100 shadow-sm">
+        <div style="font-size:28px;">👨‍🏫</div>
+        <h5 class="fw-bold mt-2 mb-3">Lecturer</h5>
+        <div class="role-section lecturer">
+          <div class="step-item">
+            <div class="step-dot" style="background:#0d6efd;"></div>
+            <div class="small">Log in and you'll land on the lecturer dashboard </div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#0d6efd;"></div>
+            <div class="small">Click <strong>"Create exam"</strong> to set up a new exam. Give the exam a title, course, duration, and schedule.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#0d6efd;"></div>
+            <div class="small">Add <strong>questions.</strong> Choose between MCQ, short answer, or essay. For MCQ, add answer choices and mark the correct one.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#0d6efd;"></div>
+            <div class="small"><strong>Publish</strong> the exam when ready. Enrolled students will be notified automatically.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#0d6efd;"></div>
+            <div class="small">View <strong>submissions</strong>, manually grade essays, and export results to CSV or PDF.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#0d6efd;"></div>
+            <div class="small">Check <strong>analytics</strong> for grade distributions, question difficulty, and pass rates.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Student -->
+    <div class="col-md-6">
+      <div class="card p-4 h-100 shadow-sm">
+        <div style="font-size:28px;">👨‍🎓</div>
+        <h5 class="fw-bold mt-2 mb-3">Student</h5>
+        <div class="role-section student">
+          <div class="step-item">
+            <div class="step-dot" style="background:#198754;"></div>
+            <div class="small"><strong>Register</strong> an account, select the student role, and fill in your matric number, department, level, and enrolled courses.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#198754;"></div>
+            <div class="small">Log in and go to your dashboard to see active and upcoming exams.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#198754;"></div>
+            <div class="small">Click <strong>"Start exam"</strong> to begin. Read the instructions carefully before proceeding.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#198754;"></div>
+            <div class="small">Answer all questions. Your answers are <strong>saved automatically</strong> as you proceed.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#198754;"></div>
+            <div class="small">Click <strong>"Submit exam"</strong> when done or let it auto-submit when time expires.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#198754;"></div>
+            <div class="small">View your <strong>result immediately</strong>, and a full review of your answers.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#198754;"></div>
+            <div class="small">Track your <strong>performance trends</strong> across all exams from the My Performance page.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invigilator -->
+    <div class="col-md-6">
+      <div class="card p-4 h-100 shadow-sm">
+        <div style="font-size:28px;">👀</div>
+        <h5 class="fw-bold mt-2 mb-3">Invigilator</h5>
+        <div class="role-section invigilator">
+          <div class="step-item">
+            <div class="step-dot" style="background:#fd7e14;"></div>
+            <div class="small">You must be <strong>assigned to an exam</strong> by an admin before you can monitor it.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#fd7e14;"></div>
+            <div class="small">Log in and go to your dashboard to see your assigned exams.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#fd7e14;"></div>
+            <div class="small">Click <strong>"Monitor live"</strong> on an active exam to open the real-time monitoring dashboard.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#fd7e14;"></div>
+            <div class="small">The dashboard shows all active student sessions. <strong>Alert counts update live</strong> as suspicious events occur.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#fd7e14;"></div>
+            <div class="small">Click <strong>"Logs"</strong> on any session to see a detailed list of proctoring events for that student.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-dot" style="background:#fd7e14;"></div>
+            <div class="small">Use <strong>"Flag"</strong> to report suspicious behaviour or <strong>"Terminate"</strong> to force-submit a student's session.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+
+  <!-- Developer Section -->
+  <div class="dev-card text-center">
+    <div style="font-size:56px;">👨‍💻</div>
+    <h3 class="fw-bold mt-3 mb-1">Ayo Divine</h3>
+    <p style="opacity:0.75; font-size:15px; margin-bottom:20px;">
+      Computer Science Final Year Student<br/>
+      Caritas University, Enugu
+    </p>
+    <p style="opacity:0.8; max-width:520px; margin:0 auto 24px; font-size:14px;">
+      This system was developed as a final year project to demonstrate the application
+      of modern web technologies in solving real-world academic challenges.
+      It covers full-stack web development, real-time communication, database design,
+      role-based access control, and data analytics.
+    </p>
+    <div>
+      <span class="tech-badge">Python</span>
+      <span class="tech-badge">Django</span>
+      <span class="tech-badge">Django Channels</span>
+      <span class="tech-badge">WebSockets</span>
+      <span class="tech-badge">JavaScript</span>
+      <span class="tech-badge">Bootstrap 5</span>
+      <span class="tech-badge">SQLite</span>
+      <span class="tech-badge">Chart.js</span>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

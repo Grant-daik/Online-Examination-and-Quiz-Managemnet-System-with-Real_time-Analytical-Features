@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}My Exams{% endblock %}
+
+{% block content %}
+<h4 class="fw-bold mb-4">My exams</h4>
+
+{% if exams %}
+<div class="row g-3">
+  {% for exam in exams %}
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="badge bg-dark">{{ exam.course.code }}</span>
+          {% if exam.session and exam.session.is_submitted %}
+            <span class="badge bg-success">Submitted</span>
+          {% elif exam.start_time > now %}
+            <span class="badge bg-secondary">Upcoming</span>
+          {% elif exam.end_time < now %}
+            <span class="badge bg-danger">Closed</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">Active</span>
+          {% endif %}
+        </div>
+        <h6 class="fw-bold">{{ exam.title }}</h6>
+        <p class="text-muted small mb-1">Duration: {{ exam.duration_minutes }} minutes</p>
+        <p class="text-muted small mb-3">
+          {{ exam.start_time|date:"d M Y, H:i" }} — {{ exam.end_time|date:"H:i" }}
+        </p>
+        {% if exam.session and exam.session.is_submitted %}
+          <a href="{% url 'student:result_detail' exam.session.submission.id %}" class="btn btn-sm btn-outline-dark">View result</a>
+        {% elif exam.start_time <= now and exam.end_time >= now %}
+          <a href="{% url 'student:start_exam' exam.id %}" class="btn btn-sm btn-dark">
+            {% if exam.session %}Resume{% else %}Start exam{% endif %}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center text-muted mt-5">
+  <p>No exams found for your enrolled courses.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+
+
+
+

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Result — {{ submission.session.exam.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">{{ submission.session.exam.title }}</h4>
+    <p class="text-muted small mb-0">{{ submission.session.exam.course.code }}</p>
+  </div>
+  <a href="{% url 'student:result_list' %}" class="btn btn-sm btn-outline-dark">Back to results</a>
+</div>
+
+<!-- score summary -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card text-center p-3">
+      <div class="fs-2 fw-bold">{{ submission.grade }}</div>
+      <div class="text-muted small">Grade</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center p-3">
+      <div class="fs-2 fw-bold">{{ submission.percentage }}%</div>
+      <div class="text-muted small">Score</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center p-3">
+      <div class="fs-2 fw-bold">{{ submission.total_score }}/{{ submission.total_marks }}</div>
+      <div class="text-muted small">Marks</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center p-3">
+      <div class="fs-2 fw-bold">
+        {% if submission.session.is_auto_submitted %}Auto{% else %}Manual{% endif %}
+      </div>
+      <div class="text-muted small">Submission</div>
+    </div>
+  </div>
+</div>
+
+<!-- answer review -->
+<h6 class="fw-bold mb-3">Answer review</h6>
+{% for answer in answers %}
+<div class="card mb-3 border-{% if answer.is_correct %}success{% elif answer.question.question_type == 'mcq' %}danger{% else %}secondary{% endif %}">
+  <div class="card-body">
+    <div class="d-flex justify-content-between mb-2">
+      <span class="fw-bold small">Question {{ forloop.counter }}</span>
+      <span class="small text-muted">{{ answer.marks_awarded }}/{{ answer.question.marks }} marks</span>
+    </div>
+    <p class="mb-2">{{ answer.question.text }}</p>
+
+    {% if answer.question.question_type == 'mcq' %}
+      <p class="mb-1 small">
+        Your answer:
+        <strong class="{% if answer.is_correct %}text-success{% else %}text-danger{% endif %}">
+          {{ answer.selected_choice.text|default:"Not answered" }}
+        </strong>
+      </p>
+      {% if not answer.is_correct %}
+      <p class="mb-0 small text-success">
+        Correct answer:
+        <strong>{% for choice in answer.question.choices.all %}{% if choice.is_correct %}{{ choice.text }}{% endif %}{% endfor %}</strong>
+      </p>
+      {% endif %}
+
+    {% else %}
+      <p class="mb-1 small text-muted">Your answer: {{ answer.text_answer|default:"Not answered" }}</p>
+      {% if answer.question.question_type != 'mcq' %}
+      <p class="mb-0 small text-warning">Awaiting manual grading</p>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

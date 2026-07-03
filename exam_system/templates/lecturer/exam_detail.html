@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}{{ exam.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="fw-bold mb-0">{{ exam.title }}</h4>
+    <p class="text-muted small mb-0">{{ exam.course.code }} — {{ exam.duration_minutes }} mins</p>
+  </div>
+  <div class="d-flex gap-2">
+    {% if exam.status == 'draft' %}
+      <a href="{% url 'lecturer:edit_exam' exam.id %}" class="btn btn-sm btn-outline-dark">Edit</a>
+      <form method="post" action="{% url 'lecturer:publish_exam' exam.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-success">Publish</button>
+      </form>
+      <form method="post" action="{% url 'lecturer:delete_exam' exam.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this exam?')">Delete</button>
+      </form>
+    {% elif exam.status == 'published' %}
+      <form method="post" action="{% url 'lecturer:close_exam' exam.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Close this exam?')">Close exam</button>
+      </form>
+    {% endif %}
+    <a href="{% url 'lecturer:exam_submissions' exam.id %}" class="btn btn-sm btn-outline-dark">
+      Submissions ({{ submission_count }})
+    </a>
+    <a href="{% url 'analytics:exam_analytics' exam.id %}" class="btn btn-sm btn-outline-dark">Analytics</a>
+  </div>
+</div>
+
+<!-- exam info -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-4 fw-bold">{{ questions.count }}</div>
+      <div class="text-muted small">Questions</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-4 fw-bold">{{ total_marks }}</div>
+      <div class="text-muted small">Total marks</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-4 fw-bold">{{ submission_count }}</div>
+      <div class="text-muted small">Submissions</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-4 fw-bold">
+        <span class="badge {% if exam.status == 'published' %}bg-success{% elif exam.status == 'draft' %}bg-secondary{% else %}bg-danger{% endif %}">
+          {{ exam.status }}
+        </span>
+      </div>
+      <div class="text-muted small">Status</div>
+    </div>
+  </div>
+</div>
+
+<!-- instructions -->
+{% if exam.instructions %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-2">Instructions</h6>
+    <p class="mb-0 text-muted">{{ exam.instructions }}</p>
+  </div>
+</div>
+{% endif %}
+
+<!-- questions -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h6 class="fw-bold mb-0">Questions</h6>
+  {% if exam.status == 'draft' %}
+  <a href="{% url 'lecturer:add_question' exam.id %}" class="btn btn-sm btn-dark">+ Add question</a>
+  {% endif %}
+</div>
+
+{% if questions %}
+{% for question in questions %}
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between mb-2">
+      <span class="fw-bold small text-muted">Question {{ forloop.counter }}</span>
+      <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-secondary">{{ question.marks }} mark{{ question.marks|pluralize }}</span>
+        <span class="badge bg-dark">{{ question.get_question_type_display }}</span>
+        {% if exam.status == 'draft' %}
+        <a href="{% url 'lecturer:edit_question' question.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+        <form method="post" action="{% url 'lecturer:delete_question' question.id %}">
+          {% csrf_token %}
+          <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this question?')">Delete</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    <p class="mb-2">{{ question.text }}</p>
+
+    {% if question.question_type == 'mcq' %}
+    <ul class="list-unstyled mb-0">
+      {% for choice in question.choices.all %}
+      <li class="small {% if choice.is_correct %}text-success fw-bold{% else %}text-muted{% endif %}">
+        {% if choice.is_correct %}✓{% else %}○{% endif %} {{ choice.text }}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<p class="text-muted text-center">No questions yet. <a href="{% url 'lecturer:add_question' exam.id %}">Add your first question</a>.</p>
+{% endif %}
+{% endblock %}
+

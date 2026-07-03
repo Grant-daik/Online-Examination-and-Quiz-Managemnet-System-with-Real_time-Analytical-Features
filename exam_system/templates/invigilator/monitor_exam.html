@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}Monitoring — {{ exam.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .session-card { transition: border-color 0.3s; }
+  .session-card.alert-high { border-left: 4px solid #dc3545; }
+  .session-card.alert-medium { border-left: 4px solid #ffc107; }
+  .session-card.alert-none { border-left: 4px solid #198754; }
+  .alert-badge { font-size: 11px; }
+  #live-alerts { max-height: 200px; overflow-y: auto; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="fw-bold mb-0">Live monitoring</h4>
+    <p class="text-muted small mb-0">{{ exam.title }} — {{ exam.course.code }}</p>
+  </div>
+  <div class="d-flex gap-2 align-items-center">
+    <span class="badge bg-success" id="connection-status">Connected</span>
+    <a href="{% url 'invigilator:exam_sessions' exam.id %}" class="btn btn-sm btn-outline-dark">All sessions</a>
+  </div>
+</div>
+
+<!-- live alerts feed -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-2">Live alerts</h6>
+    <div id="live-alerts">
+      <p class="text-muted small mb-0" id="no-alerts-msg">No alerts yet. Monitoring is active.</p>
+    </div>
+  </div>
+</div>
+
+<!-- active sessions grid -->
+<h6 class="fw-bold mb-3">
+  Active sessions
+  <span class="badge bg-secondary ms-1">{{ active_sessions.count }}</span>
+</h6>
+
+{% if active_sessions %}
+<div class="row g-3" id="sessions-grid">
+  {% for session in active_sessions %}
+  <div class="col-md-4" id="session-card-{{ session.id }}">
+    <div class="card session-card {% if session.alert_count >= 5 %}alert-high{% elif session.alert_count >= 2 %}alert-medium{% else %}alert-none{% endif %}">
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="fw-500 small">{{ session.student.get_full_name }}</span>
+          <span class="badge bg-danger alert-badge" id="alert-count-{{ session.id }}">
+            {{ session.alert_count }} alert{{ session.alert_count|pluralize }}
+          </span>
+        </div>
+        <div class="text-muted small mb-2">
+          Started: {{ session.started_at|date:"H:i" }}
+        </div>
+        {% if session.last_alert %}
+        <div class="text-muted small mb-2" id="last-alert-{{ session.id }}">
+          Last: {{ session.last_alert.get_event_type_display }}
+        </div>
+        {% else %}
+        <div class="text-muted small mb-2" id="last-alert-{{ session.id }}">
+          No alerts
+        </div>
+        {% endif %}
+        <div class="d-flex gap-1 mt-2">
+          <a href="{% url 'invigilator:session_logs' session.id %}" class="btn btn-sm btn-outline-secondary">Logs</a>
+          <a href="{% url 'invigilator:session_snapshots' session.id %}" class="btn btn-sm btn-outline-secondary">Snapshots</a>
+          <a href="{% url 'invigilator:flag_session' session.id %}" class="btn btn-sm btn-outline-warning">Flag</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-muted text-center mt-4">No active sessions at the moment.</p>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const EXAM_ID = {{ exam.id }};
+  const alertCounts = {};
+
+  // initialize alert counts from server data
+  {% for session in active_sessions %}
+  alertCounts[{{ session.id }}] = {{ session.alert_count }};
+  {% endfor %}
+
+  // connect to monitoring WebSocket for each active session
+  {% for session in active_sessions %}
+  connectMonitor({{ session.id }});
+  {% endfor %}
+
+  function connectMonitor(sessionId) {
+    const ws = new WebSocket(`ws://${window.location.host}/ws/monitor/${sessionId}/`);
+
+    ws.onopen = () => {
+      document.getElementById('connection-status').textContent = 'Connected';
+      document.getElementById('connection-status').className = 'badge bg-success';
+    };
+
+    ws.onclose = () => {
+      document.getElementById('connection-status').textContent = 'Disconnected';
+      document.getElementById('connection-status').className = 'badge bg-danger';
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'proctor_alert') {
+        handleAlert(data);
+      }
+    };
+  }
+
+  function handleAlert(data) {
+    const sessionId = data.session_id;
+
+    // update alert count
+    if (!alertCounts[sessionId]) alertCounts[sessionId] = 0;
+    alertCounts[sessionId]++;
+
+    // update session card badge
+    const countEl = document.getElementById(`alert-count-${sessionId}`);
+    if (countEl) {
+      countEl.textContent = `${alertCounts[sessionId]} alert${alertCounts[sessionId] !== 1 ? 's' : ''}`;
+    }
+
+    // update last alert text
+    const lastAlertEl = document.getElementById(`last-alert-${sessionId}`);
+    if (lastAlertEl) {
+      lastAlertEl.textContent = `Last: ${data.event_type.replace(/_/g, ' ')}`;
+    }
+
+    // update card border color
+    const cardEl = document.querySelector(`#session-card-${sessionId} .session-card`);
+    if (cardEl) {
+      cardEl.classList.remove('alert-none', 'alert-medium', 'alert-high');
+      if (alertCounts[sessionId] >= 5) {
+        cardEl.classList.add('alert-high');
+      } else if (alertCounts[sessionId] >= 2) {
+        cardEl.classList.add('alert-medium');
+      }
+    }
+
+    // add to live alerts feed
+    const alertsFeed = document.getElementById('live-alerts');
+    const noAlertsMsg = document.getElementById('no-alerts-msg');
+    if (noAlertsMsg) noAlertsMsg.remove();
+
+    const alertEl = document.createElement('div');
+    alertEl.className = 'border-bottom py-1 d-flex justify-content-between';
+    alertEl.innerHTML = `
+      <span class="small">
+        <strong>${data.student}</strong> —
+        ${data.event_type.replace(/_/g, ' ')}
+      </span>
+      <span class="text-muted small">${new Date().toLocaleTimeString()}</span>
+    `;
+    alertsFeed.prepend(alertEl);
+  }
+</script>
+{% endblock %}

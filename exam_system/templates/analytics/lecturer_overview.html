@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}My Analytics{% endblock %}
+
+{% block extra_css %}
+<style>.chart-container { position: relative; height: 260px; }</style>
+{% endblock %}
+
+{% block content %}
+<h4 class="fw-bold mb-4">My analytics overview</h4>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ stats.total_exams }}</div>
+      <div class="text-muted small">Total exams</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ stats.total_submissions }}</div>
+      <div class="text-muted small">Total submissions</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ stats.avg_score }}%</div>
+      <div class="text-muted small">Overall avg score</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Grade distribution</h6>
+        <div class="chart-container">
+          <canvas id="gradeChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Average score per exam</h6>
+        <div class="chart-container">
+          <canvas id="examChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if stats.exam_summaries %}
+<div class="card">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Exam performance summary</h6>
+    <table class="table table-sm mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>Exam</th>
+          <th>Course</th>
+          <th>Submissions</th>
+          <th>Avg score</th>
+          <th>Pass rate</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in stats.exam_summaries %}
+        <tr>
+          <td class="small">{{ item.exam.title }}</td>
+          <td class="small">{{ item.exam.course.code }}</td>
+          <td>{{ item.submission_count }}</td>
+          <td>{{ item.avg_score }}%</td>
+          <td>
+            <span class="{% if item.pass_rate >= 70 %}text-success{% elif item.pass_rate >= 50 %}text-warning{% else %}text-danger{% endif %} fw-500">
+              {{ item.pass_rate }}%
+            </span>
+          </td>
+          <td>
+            <a href="{% url 'analytics:exam_analytics' item.exam.id %}" class="btn btn-sm btn-outline-dark">
+              View
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const chartData = {{ chart_data|safe }};
+const colors = ['#1a1a2e','#4a4a8a','#6a6aaa','#8a8aca','#aaaaee','#ccccff'];
+
+if (chartData.grades.labels.length > 0) {
+  new Chart(document.getElementById('gradeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: chartData.grades.labels,
+      datasets: [{ data: chartData.grades.data, backgroundColor: colors, borderWidth: 2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right' } },
+    }
+  });
+}
+
+if (chartData.exams.labels.length > 0) {
+  new Chart(document.getElementById('examChart'), {
+    type: 'bar',
+    data: {
+      labels: chartData.exams.labels,
+      datasets: [
+        {
+          label: 'Avg score (%)',
+          data: chartData.exams.avg_scores,
+          backgroundColor: '#1a1a2e',
+          borderRadius: 4,
+        },
+        {
+          label: 'Pass rate (%)',
+          data: chartData.exams.pass_rates,
+          backgroundColor: '#6a6aaa',
+          borderRadius: 4,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, max: 100 } },
+    }
+  });
+}
+</script>
+{% endblock %}

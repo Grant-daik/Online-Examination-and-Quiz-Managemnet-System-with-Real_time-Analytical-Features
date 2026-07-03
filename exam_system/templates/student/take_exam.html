@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% block title %}{{ exam.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .question-card { border-left: 4px solid #1a1a2e; margin-bottom: 1.5rem; }
+  .timer-bar { position: sticky; top: 0; z-index: 100; background: #1a1a2e; color: white; padding: 10px 20px; border-radius: 8px; margin-bottom: 24px; }
+  .choice-label { cursor: pointer; padding: 10px 14px; border: 1px solid #dee2e6; border-radius: 8px; display: block; margin-bottom: 8px; transition: background 0.2s; }
+  .choice-label:hover { background: #f0f0f0; }
+  input[type="radio"]:checked + .choice-label,
+  input[type="radio"]:checked ~ .choice-label { background: #e8e8f0; border-color: #1a1a2e; }
+  #connection-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 10px; }
+  .conn-ok { background: #198754; }
+  .conn-bad { background: #dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- timer -->
+<div class="timer-bar d-flex justify-content-between align-items-center">
+  <span class="fw-bold">
+    {{ exam.title }}
+    <span id="connection-badge" class="conn-bad">Connecting...</span>
+  </span>
+  <span>Time remaining: <strong id="timer-display">--:--</strong></span>
+</div>
+
+<form method="post" action="{% url 'student:submit_exam' session.id %}" id="exam-form">
+  {% csrf_token %}
+
+  {% for question in questions %}
+  <div class="card question-card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between mb-2">
+        <span class="fw-bold small text-muted">Question {{ forloop.counter }}</span>
+        <span class="badge bg-secondary">{{ question.marks }} mark{{ question.marks|pluralize }}</span>
+      </div>
+      <p class="mb-3">{{ question.text }}</p>
+
+      {% if question.image %}
+      <img src="{{ question.image.url }}" class="img-fluid rounded mb-3" style="max-height:200px"/>
+      {% endif %}
+
+      {% if question.question_type == 'mcq' %}
+        {% for choice in question.display_choices %}
+        <div>
+          <input type="radio" name="question_{{ question.id }}" id="choice_{{ choice.id }}" value="{{ choice.id }}"
+            class="d-none choice-radio"
+            data-question-id="{{ question.id }}"
+            {% if question.saved and question.saved.selected_choice_id == choice.id %}checked{% endif %}
+          />
+          <label for="choice_{{ choice.id }}" class="choice-label">{{ choice.text }}</label>
+        </div>
+        {% endfor %}
+
+      {% elif question.question_type == 'short' %}
+        <textarea name="text_{{ question.id }}" class="form-control text-answer" rows="3"
+          data-question-id="{{ question.id }}"
+          placeholder="Write your answer here...">{% if question.saved %}{{ question.saved.text_answer }}{% endif %}</textarea>
+
+      {% elif question.question_type == 'essay' %}
+        <textarea name="text_{{ question.id }}" class="form-control text-answer" rows="7"
+          data-question-id="{{ question.id }}"
+          placeholder="Write your essay here...">{% if question.saved %}{{ question.saved.text_answer }}{% endif %}</textarea>
+      {% endif %}
+
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="d-flex justify-content-end mt-4 mb-5">
+    <button type="button" class="btn btn-dark px-5" onclick="confirmSubmit()">Submit exam</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const SESSION_ID = {{ session.id }};
+  let timeRemaining = {{ time_remaining }};
+  let socket = null;
+  let socketReady = false;
+
+  // ---- WebSocket connection
+  
+  function connectSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    socket = new WebSocket(`${protocol}${window.location.host}/ws/exam/${SESSION_ID}/`);
+
+    socket.onopen = () => {
+      socketReady = true;
+      setConnectionBadge(true);
+    };
+
+    socket.onclose = () => {
+      socketReady = false;
+      setConnectionBadge(false);
+      setTimeout(connectSocket, 3000);
+    };
+
+    socket.onerror = () => {
+      socketReady = false;
+      setConnectionBadge(false);
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === 'timer_sync' && data.time_remaining !== null && data.time_remaining !== undefined) {
+        timeRemaining = data.time_remaining;
+        updateTimerDisplay();
+      }
+
+      if (data.type === 'exam_closed') {
+        alert(data.message || 'Your exam session has been closed by an invigilator.');
+        document.getElementById('exam-form').submit();
+      }
+    };
+  }
+
+  function setConnectionBadge(connected) {
+    const badge = document.getElementById('connection-badge');
+    if (connected) {
+      badge.textContent = 'Connected';
+      badge.className = 'conn-ok';
+    } else {
+      badge.textContent = 'Reconnecting...';
+      badge.className = 'conn-bad';
+    }
+  }
+
+  function sendSocketMessage(payload) {
+    if (socketReady && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(payload));
+      return true;
+    }
+    return false;
+  }
+
+  // --- Timer
+
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function updateTimerDisplay() {
+    const display = document.getElementById('timer-display');
+    display.textContent = formatTime(timeRemaining);
+    if (timeRemaining <= 300) {
+      display.style.color = '#ff4444';
+    }
+  }
+
+  function tick() {
+    if (timeRemaining <= 0) {
+      document.getElementById('exam-form').submit();
+      return;
+    }
+    timeRemaining--;
+    updateTimerDisplay();
+
+    if (timeRemaining % 30 === 0) {
+      syncTimer();
+    }
+  }
+
+  function syncTimer() {
+    const sentOverSocket = sendSocketMessage({
+      type: 'timer_sync',
+      time_remaining: timeRemaining,
+    });
+
+    if (!sentOverSocket) {
+      fetch(`/student/exams/session/${SESSION_ID}/sync-timer/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken(),
+        },
+        body: JSON.stringify({ time_remaining: timeRemaining }),
+      });
+    }
+  }
+
+  function getCsrfToken() {
+    return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+  }
+
+  function confirmSubmit() {
+    if (confirm('Are you sure you want to submit your exam? You cannot undo this.')) {
+      document.getElementById('exam-form').submit();
+    }
+  }
+
+  
+  // ---- Answer auto-save over WebSocket
+  
+  function attachAnswerListeners() {
+    document.querySelectorAll('.choice-radio').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        if (!radio.checked) return;
+        sendSocketMessage({
+          type: 'save_answer',
+          question_id: radio.dataset.questionId,
+          choice_id: radio.value,
+          text_answer: '',
+        });
+      });
+    });
+
+    document.querySelectorAll('.text-answer').forEach((textarea) => {
+      let debounceTimer = null;
+      textarea.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          sendSocketMessage({
+            type: 'save_answer',
+            question_id: textarea.dataset.questionId,
+            choice_id: null,
+            text_answer: textarea.value,
+          });
+        }, 800);
+      });
+    });
+  }
+
+
+  // --- Proctoring event detection
+
+  function reportProctorEvent(eventType, details) {
+    sendSocketMessage({
+      type: 'proctor_event',
+      event_type: eventType,
+      details: details || {},
+    });
+  }
+
+  function attachProctoringListeners() {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        reportProctorEvent('tab_switch', { visibility: 'hidden' });
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      reportProctorEvent('focus_loss', {});
+    });
+
+    document.addEventListener('copy', () => {
+      reportProctorEvent('copy_attempt', {});
+    });
+
+    document.addEventListener('paste', () => {
+      reportProctorEvent('paste_attempt', {});
+    });
+
+    document.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      reportProctorEvent('right_click', {});
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        reportProctorEvent('fullscreen_exit', {});
+      }
+    });
+  }
+
+  // --- Init
+
+  connectSocket();
+  attachAnswerListeners();
+  attachProctoringListeners();
+  updateTimerDisplay();
+  setInterval(tick, 1000);
+</script>
+{% endblock %}

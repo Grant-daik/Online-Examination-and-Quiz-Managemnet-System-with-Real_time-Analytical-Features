@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <style>
+    body { font-family: sans-serif; font-size: 12px; color: #333; }
+    h1 { font-size: 18px; margin-bottom: 4px; }
+    h2 { font-size: 14px; margin: 16px 0 6px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th { background: #1a1a2e; color: white; padding: 6px 8px; text-align: left; font-size: 11px; }
+    td { padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px; }
+    .stat-grid { display: flex; gap: 16px; margin: 12px 0; }
+    .stat-box { border: 1px solid #ddd; border-radius: 6px; padding: 8px 12px; flex: 1; text-align: center; }
+    .stat-value { font-size: 20px; font-weight: bold; }
+    .stat-label { font-size: 10px; color: #666; }
+  </style>
+</head>
+<body>
+  <h1>{{ exam.title }}</h1>
+  <p>{{ exam.course.code }} — {{ exam.course.title }} | Generated: {% now "d M Y H:i" %}</p>
+
+  {% if stats %}
+  <div class="stat-grid">
+    <div class="stat-box">
+      <div class="stat-value">{{ stats.aggregates.total_submissions }}</div>
+      <div class="stat-label">Submissions</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value">{{ stats.aggregates.avg_score|floatformat:1 }}%</div>
+      <div class="stat-label">Average</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value">{{ stats.pass_rate }}%</div>
+      <div class="stat-label">Pass rate</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value">{{ stats.passed }} / {{ stats.failed }}</div>
+      <div class="stat-label">Passed / Failed</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <h2>Student results</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Student</th>
+        <th>Matric no.</th>
+        <th>Score</th>
+        <th>Percentage</th>
+        <th>Grade</th>
+        <th>Submitted</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sub in submissions %}
+      <tr>
+        <td>{{ sub.session.student.get_full_name }}</td>
+        <td>
+          {% with sub.session.student.student_profile as profile %}
+            {% if profile %}{{ profile.matric_number }}{% endif %}
+          {% endwith %}
+        </td>
+        <td>{{ sub.total_score }}/{{ sub.total_marks }}</td>
+        <td>{{ sub.percentage }}%</td>
+        <td>{{ sub.grade }}</td>
+        <td>{{ sub.submitted_at|date:"d M Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

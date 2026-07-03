@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% block title %}Analytics — {{ exam.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .chart-container { position: relative; height: 260px; }
+  .difficulty-easy { color: #198754; font-weight: 500; }
+  .difficulty-medium { color: #fd7e14; font-weight: 500; }
+  .difficulty-hard { color: #dc3545; font-weight: 500; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">{{ exam.title }}</h4>
+    <p class="text-muted small mb-0">{{ exam.course.code }} — Analytics</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'analytics:export_exam_csv' exam.id %}" class="btn btn-sm btn-outline-dark">
+      Export CSV
+    </a>
+    <a href="{% url 'analytics:export_exam_pdf' exam.id %}" class="btn btn-sm btn-outline-dark">
+      Export PDF
+    </a>
+    <a href="{% url 'lecturer:exam_detail' exam.id %}" class="btn btn-sm btn-outline-secondary">
+      Back to exam
+    </a>
+  </div>
+</div>
+
+{% if stats %}
+
+<!-- summary stats -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ stats.aggregates.total_submissions }}</div>
+      <div class="text-muted small">Submissions</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ stats.aggregates.avg_score|floatformat:1 }}%</div>
+      <div class="text-muted small">Average score</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold text-success">{{ stats.pass_rate }}%</div>
+      <div class="text-muted small">Pass rate</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">
+        {{ stats.aggregates.highest_score|floatformat:1 }}% /
+        {{ stats.aggregates.lowest_score|floatformat:1 }}%
+      </div>
+      <div class="text-muted small">Highest / Lowest</div>
+    </div>
+  </div>
+</div>
+
+<!-- charts row -->
+<div class="row g-3 mb-4">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Grade distribution</h6>
+        <div class="chart-container">
+          <canvas id="gradeChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Question correct rates</h6>
+        <div class="chart-container">
+          <canvas id="questionChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- submission timeline -->
+{% if stats.timeline %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Submission timeline</h6>
+    <div class="chart-container">
+      <canvas id="timelineChart"></canvas>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- question breakdown table -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Question breakdown</h6>
+    <table class="table table-sm mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th>
+          <th>Question</th>
+          <th>Type</th>
+          <th>Marks</th>
+          <th>Avg marks awarded</th>
+          <th>Correct rate</th>
+          <th>Difficulty</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for qs in stats.question_stats %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td class="small">{{ qs.question.text|truncatechars:60 }}</td>
+          <td class="small">{{ qs.question.get_question_type_display }}</td>
+          <td>{{ qs.question.marks }}</td>
+          <td>{{ qs.avg_marks }}</td>
+          <td>{% if qs.correct_rate is not None %}{{ qs.correct_rate }}%{% else %}—{% endif %}</td>
+          <td>
+            {% if qs.difficulty %}
+            <span class="difficulty-{{ qs.difficulty|lower }}">{{ qs.difficulty }}</span>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- proctoring summary -->
+{% if stats.proctor_summary %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Proctoring events</h6>
+    {% for item in stats.proctor_summary %}
+    <div class="d-flex justify-content-between border-bottom py-2">
+      <span class="small">{{ item.event_type|title }}</span>
+      <span class="badge bg-secondary">{{ item.count }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="text-center text-muted mt-5">
+  <p>No submissions yet. Analytics will appear once students start submitting.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const chartData = {{ chart_data|safe }};
+const colors = ['#1a1a2e', '#4a4a8a', '#6a6aaa', '#8a8aca', '#aaaaee'];
+
+// grade distribution chart
+if (chartData.grades.labels.length > 0) {
+  new Chart(document.getElementById('gradeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: chartData.grades.labels,
+      datasets: [{
+        data: chartData.grades.data,
+        backgroundColor: colors,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'right' } },
+    }
+  });
+}
+
+// question correct rates chart
+if (chartData.questions.labels.length > 0) {
+  new Chart(document.getElementById('questionChart'), {
+    type: 'bar',
+    data: {
+      labels: chartData.questions.labels,
+      datasets: [{
+        label: 'Correct rate (%)',
+        data: chartData.questions.correct_rates,
+        backgroundColor: '#1a1a2e',
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, max: 100 }
+      },
+      plugins: { legend: { display: false } },
+    }
+  });
+}
+
+// submission timeline chart
+const timelineEl = document.getElementById('timelineChart');
+if (timelineEl && chartData.timeline.labels.length > 0) {
+  new Chart(timelineEl, {
+    type: 'line',
+    data: {
+      labels: chartData.timeline.labels,
+      datasets: [{
+        label: 'Submissions',
+        data: chartData.timeline.data,
+        borderColor: '#1a1a2e',
+        backgroundColor: 'rgba(26,26,46,0.1)',
+        tension: 0.4,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+    }
+  });
+}
+</script>
+{% endblock %}

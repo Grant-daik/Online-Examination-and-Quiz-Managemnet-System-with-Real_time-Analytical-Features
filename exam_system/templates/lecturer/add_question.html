@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}{% if editing %}Edit Question{% else %}Add Question{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <h4 class="fw-bold mb-1">{% if editing %}Edit question{% else %}Add question{% endif %}</h4>
+    <p class="text-muted small mb-4">Exam: {{ exam.title }}</p>
+
+    <div class="card">
+      <div class="card-body p-4">
+        <form method="post" enctype="multipart/form-data" id="question-form">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label">Question text</label>
+            {{ question_form.text }}
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Question type</label>
+              {{ question_form.question_type }}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Marks</label>
+              {{ question_form.marks }}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Order</label>
+              {{ question_form.order }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Image (optional)</label>
+            {{ question_form.image }}
+          </div>
+
+          <!-- choices section (shown for MCQ only) -->
+          <div id="choices-section">
+            <hr/>
+            <h6 class="fw-bold mb-3">Answer choices</h6>
+            {{ choice_formset.management_form }}
+            {% for choice_form in choice_formset %}
+            <div class="row align-items-center mb-2 choice-row">
+              <div class="col-md-9">{{ choice_form.text }}</div>
+              <div class="col-md-2 d-flex align-items-center gap-2">
+                {{ choice_form.is_correct }}
+                <label class="form-check-label small">Correct</label>
+              </div>
+              <div class="col-md-1 small text-muted">
+                {% if choice_form.instance.pk %}{{ choice_form.DELETE }}{% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" name="save" class="btn btn-dark">
+              {% if editing %}Save changes{% else %}Save question{% endif %}
+            </button>
+            {% if not editing %}
+            <button type="submit" name="add_another" class="btn btn-outline-dark">Save & add another</button>
+            {% endif %}
+            <a href="{% url 'lecturer:exam_detail' exam.id %}" class="btn btn-outline-secondary">Done</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const typeSelect = document.getElementById('id_question_type');
+  const choicesSection = document.getElementById('choices-section');
+
+  function toggleChoices() {
+    choicesSection.style.display = typeSelect.value === 'mcq' ? 'block' : 'none';
+  }
+
+  typeSelect.addEventListener('change', toggleChoices);
+  toggleChoices();
+</script>
+{% endblock %}

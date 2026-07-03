@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Submission — {{ submission.session.student.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">{{ submission.session.student.get_full_name }}</h4>
+    <p class="text-muted small mb-0">{{ submission.session.exam.title }}</p>
+  </div>
+  <a href="{% url 'lecturer:exam_submissions' submission.session.exam.id %}" class="btn btn-sm btn-outline-dark">Back</a>
+</div>
+
+<!-- summary -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ submission.grade }}</div>
+      <div class="text-muted small">Grade</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ submission.percentage }}%</div>
+      <div class="text-muted small">Percentage</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold">{{ submission.total_score }}/{{ submission.total_marks }}</div>
+      <div class="text-muted small">Score</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fs-3 fw-bold small">{{ submission.submitted_at|date:"d M Y" }}</div>
+      <div class="text-muted small">Submitted</div>
+    </div>
+  </div>
+</div>
+
+<!-- answers with manual grading -->
+<form method="post" action="{% url 'lecturer:grade_submission' submission.id %}">
+  {% csrf_token %}
+  <h6 class="fw-bold mb-3">Answers</h6>
+
+  {% for answer in answers %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="d-flex justify-content-between mb-2">
+        <span class="fw-bold small text-muted">Question {{ forloop.counter }}</span>
+        <span class="small text-muted">{{ answer.question.marks }} marks available</span>
+      </div>
+      <p class="mb-2">{{ answer.question.text }}</p>
+
+      {% if answer.question.question_type == 'mcq' %}
+        <p class="small mb-1">
+          Answer: <strong class="{% if answer.is_correct %}text-success{% else %}text-danger{% endif %}">
+            {{ answer.selected_choice.text|default:"Not answered" }}
+          </strong>
+        </p>
+        <p class="small mb-0 text-muted">Marks: {{ answer.marks_awarded }}/{{ answer.question.marks }}</p>
+
+      {% else %}
+        <div class="bg-light rounded p-2 mb-3">
+          <p class="small mb-0 text-muted">{{ answer.text_answer|default:"No answer provided" }}</p>
+        </div>
+        <div class="row align-items-center">
+          <div class="col-md-3">
+            <label class="form-label small">Marks awarded (max {{ answer.question.marks }})</label>
+            <input type="number" name="marks_{{ answer.id }}" class="form-control form-control-sm"
+              value="{{ answer.marks_awarded }}" min="0" max="{{ answer.question.marks }}" step="0.5"/>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if answers|length > 0 %}
+  <div class="d-flex justify-content-end mt-3 mb-5">
+    <button type="submit" class="btn btn-dark">Save grades & notify student</button>
+  </div>
+  {% endif %}
+</form>
+{% endblock %}

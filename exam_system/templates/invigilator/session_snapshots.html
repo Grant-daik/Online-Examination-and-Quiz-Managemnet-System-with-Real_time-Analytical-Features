@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Snapshots — {{ session.student.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">Webcam snapshots</h4>
+    <p class="text-muted small mb-0">{{ session.student.get_full_name }} — {{ session.exam.title }}</p>
+  </div>
+  <a href="{% url 'invigilator:session_logs' session.id %}" class="btn btn-sm btn-outline-dark">View logs</a>
+</div>
+
+{% if snapshots %}
+<div class="row g-3">
+  {% for snapshot in snapshots %}
+  <div class="col-md-3">
+    <div class="card {% if snapshot.flagged %}border-danger{% endif %}">
+      <img src="{{ snapshot.image.url }}" class="card-img-top" style="height:160px; object-fit:cover;"/>
+      <div class="card-body p-2">
+        <div class="small text-muted">{{ snapshot.captured_at|date:"H:i:s" }}</div>
+        {% if snapshot.flagged %}
+        <span class="badge bg-danger mt-1">Flagged</span>
+        <div class="small text-danger">{{ snapshot.flag_reason }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center text-muted mt-4">
+  <p>No snapshots captured for this session.</p>
+</div>
+{% endif %}
+{% endblock %}

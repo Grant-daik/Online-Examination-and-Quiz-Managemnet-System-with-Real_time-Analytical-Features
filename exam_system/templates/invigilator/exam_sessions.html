@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Sessions — {{ exam.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">Exam sessions</h4>
+    <p class="text-muted small mb-0">{{ exam.title }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'invigilator:monitor_exam' exam.id %}" class="btn btn-sm btn-success">Monitor live</a>
+    <a href="{% url 'invigilator:assigned_exams' %}" class="btn btn-sm btn-outline-dark">Back</a>
+  </div>
+</div>
+
+{% if sessions %}
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>Student</th>
+          <th>Started</th>
+          <th>Status</th>
+          <th>Alerts</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for session in sessions %}
+        <tr>
+          <td>{{ session.student.get_full_name }}</td>
+          <td class="small text-muted">{{ session.started_at|date:"H:i:s" }}</td>
+          <td>
+            {% if session.is_submitted %}
+              <span class="badge bg-success">Submitted</span>
+              {% if session.is_auto_submitted %}
+                <span class="badge bg-warning text-dark">Auto</span>
+              {% endif %}
+            {% else %}
+              <span class="badge bg-primary">In progress</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge {% if session.alert_count >= 5 %}bg-danger{% elif session.alert_count >= 2 %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+              {{ session.alert_count }}
+            </span>
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'invigilator:session_logs' session.id %}" class="btn btn-sm btn-outline-secondary">Logs</a>
+              <a href="{% url 'invigilator:session_snapshots' session.id %}" class="btn btn-sm btn-outline-secondary">Snapshots</a>
+              {% if not session.is_submitted %}
+              <a href="{% url 'invigilator:flag_session' session.id %}" class="btn btn-sm btn-outline-warning">Flag</a>
+              <a href="{% url 'invigilator:terminate_session' session.id %}" class="btn btn-sm btn-outline-danger">Terminate</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<p class="text-muted text-center mt-4">No sessions found for this exam.</p>
+{% endif %}
+{% endblock %}

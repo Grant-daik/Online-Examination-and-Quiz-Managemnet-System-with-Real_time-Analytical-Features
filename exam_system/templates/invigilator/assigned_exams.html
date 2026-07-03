@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Assigned Exams{% endblock %}
+
+{% block content %}
+<h4 class="fw-bold mb-4">Assigned exams</h4>
+
+{% if exams %}
+<div class="row g-3">
+  {% for exam in exams %}
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="badge bg-dark">{{ exam.course.code }}</span>
+          {% if exam.start_time <= now and exam.end_time >= now %}
+            <span class="badge bg-success">Live</span>
+          {% elif exam.start_time > now %}
+            <span class="badge bg-secondary">Upcoming</span>
+          {% else %}
+            <span class="badge bg-danger">Ended</span>
+          {% endif %}
+        </div>
+        <h6 class="fw-bold">{{ exam.title }}</h6>
+        <p class="text-muted small mb-1">
+          {{ exam.start_time|date:"d M Y, H:i" }} — {{ exam.end_time|date:"H:i" }}
+        </p>
+        <p class="text-muted small mb-3">
+          {{ exam.active_sessions }} active · {{ exam.total_sessions }} total sessions
+        </p>
+        <div class="d-flex gap-2">
+          {% if exam.start_time <= now and exam.end_time >= now %}
+          <a href="{% url 'invigilator:monitor_exam' exam.id %}" class="btn btn-sm btn-success">Monitor live</a>
+          {% endif %}
+          <a href="{% url 'invigilator:exam_sessions' exam.id %}" class="btn btn-sm btn-outline-dark">Sessions</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center text-muted mt-5">
+  <p>No exams assigned to you yet.</p>
+</div>
+{% endif %}
+{% endblock %}

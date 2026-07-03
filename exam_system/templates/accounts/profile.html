@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <h4 class="fw-bold mb-1">My profile</h4>
+    <p class="text-muted small mb-4">{{ user.get_full_name }} — {{ user.role|capfirst }}</p>
+
+    {% if profile_form %}
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="post">
+          {% csrf_token %}
+          {% for field in profile_form %}
+          <div class="mb-3">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <div class="text-danger small">{{ field.errors }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-dark">Save changes</button>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <p class="text-muted">No profile details to display.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
